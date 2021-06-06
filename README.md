@@ -1,7 +1,7 @@
-# GIR (Botty McBotface)
+# GIR (Botty McBotface) (Lil_Un Reprod)
 ![](https://media.discordapp.net/attachments/688121419980341282/787792406443458610/gggggggir.png)
 
-Moderation bot for r/Jailbreak
+Moderation bot for r/Jailbreak modified by lil_un to add some more features
 
 ### Prerequisites for setup
 > Note: the setup instructions assume you're using macOS or a Linux based distro. I have not tested on Windows, but I assume it would work with some effort.
