@@ -83,23 +83,23 @@ class ModActions(commands.Cog):
 
         log_kickban = None
         dmed = True
-        
-        if cur_points >= 600:
+
+        if cur_points >= 800:
             # automatically ban user if more than 600 points
             try:
-                await user.send(f"You were banned from {ctx.guild.name} for reaching 600 or more points.", embed=log)
+                await user.send(f"You were banned from {ctx.guild.name} for reaching 800 or more points.", embed=log)
             except Exception:
                 dmed = False
 
-            log_kickban = await self.add_ban_case(ctx, user, "600 or more warn points reached.")
-            await user.ban(reason="600 or more warn points reached.")
+            log_kickban = await self.add_ban_case(ctx, user, "800 or more warn points reached.")
+            await user.ban(reason="800 or more warn points reached.")
 
         elif cur_points >= 400 and not results.was_warn_kicked and isinstance(user, discord.Member):
             # kick user if >= 400 points and wasn't previously kicked
             await ctx.settings.set_warn_kicked(user.id)
 
             try:
-                await user.send(f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 600 points.", embed=log)
+                await user.send(f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 800 points.", embed=log)
             except Exception:
                 dmed = False
 
@@ -109,7 +109,7 @@ class ModActions(commands.Cog):
         else:
             if isinstance(user, discord.Member):
                 try:
-                    await user.send(f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 600 points.", embed=log)
+                    await user.send(f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 800 points.", embed=log)
                 except Exception:
                     dmed = False
 
@@ -233,12 +233,12 @@ class ModActions(commands.Cog):
         if case is None:
             raise commands.BadArgument(
                 message=f"{user} has no case with ID {case_id}")
-            
+
         old_reason = case.reason
         case.reason = new_reason
         case.date = datetime.datetime.now()
         cases.save()
-        
+
         dmed = True
         log = await logging.prepare_editreason_log(ctx.author, user, case, old_reason)
         if isinstance(user, discord.Member):
@@ -249,7 +249,7 @@ class ModActions(commands.Cog):
 
         public_chan = ctx.guild.get_channel(
             ctx.settings.guild().channel_public)
-            
+
         found = False
         async with ctx.typing():
             async for message in public_chan.history(limit=200):
@@ -263,7 +263,7 @@ class ModActions(commands.Cog):
                     continue
                 if len(embed.footer.text.split(" ")) < 2:
                     continue
-                
+
                 if f"#{case_id}" == embed.footer.text.split(" ")[1]:
                     for i, field in enumerate(embed.fields):
                         if field.name == "Reason":
@@ -279,8 +279,8 @@ class ModActions(commands.Cog):
             await public_chan.send(user.mention if not dmed else "", embed=log)
 
         await ctx.message.delete(delay=10)
-          
-            
+
+
     @commands.guild_only()
     @permissions.mod_and_up()
     @commands.command(name="removepoints")
@@ -352,21 +352,21 @@ class ModActions(commands.Cog):
     @commands.guild_only()
     @commands.bot_has_guild_permissions(kick_members=True)
     @permissions.mod_and_up()
-    @commands.command(name="roblox")
-    async def roblox(self, ctx: context.Context, user: permissions.ModsAndAboveMember) -> None:
-        """Kick a Roblox user and tell them where to go (mod only)
+    @commands.command(name="simp")
+    async def simp(self, ctx: context.Context, user: permissions.ModsAndAboveMember) -> None:
+        """Kick a Simp user and tell them where to go (mod only)
 
         Example usage:
         --------------
-        `!roblox <@user/ID>`
+        `!simp <@user/ID>`
 
         Parameters
         ----------
         user : discord.Member
             User to kick
         """
-        
-        reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
+
+        reason = "You were kicked for simping"
         log = await self.add_kick_case(ctx, user, reason)
 
         try:
@@ -385,7 +385,7 @@ class ModActions(commands.Cog):
             log.remove_author()
             log.set_thumbnail(url=user.avatar_url)
             await public_chan.send(embed=log)
-            
+
     @commands.guild_only()
     @commands.bot_has_guild_permissions(kick_members=True)
     @permissions.mod_and_up()
@@ -758,7 +758,7 @@ class ModActions(commands.Cog):
         Example usage
         --------------
         !lock or !lock #channel
-            
+
         Parameters
         ----------
         channel : discord.TextChannel, optional
@@ -767,7 +767,7 @@ class ModActions(commands.Cog):
 
         if channel is None:
             channel = ctx.channel
-            
+
         if await self.lock_unlock_channel(ctx, channel, True) is not None:
             await ctx.send_success(f"Locked {channel.mention}!", delete_after=5)
             await ctx.message.delete(delay=5)
@@ -784,7 +784,7 @@ class ModActions(commands.Cog):
         Example usage
         --------------
         !unlock or !unlock #channel
-            
+
         Parameters
         ----------
         channel : discord.TextChannel, optional
@@ -793,7 +793,7 @@ class ModActions(commands.Cog):
 
         if channel is None:
             channel = ctx.channel
-            
+
         if await self.lock_unlock_channel(ctx, channel) is not None:
             await ctx.send_success(f"Unocked {channel.mention}!", delete_after=5)
             await ctx.message.delete(delay=5)
@@ -809,7 +809,7 @@ class ModActions(commands.Cog):
         channel = channel or ctx.channel
         if channel.id in await ctx.settings.get_locked_channels():
             raise commands.BadArgument("That channel is already lockable.")
-        
+
         await ctx.settings.add_locked_channels(channel.id)
         await ctx.send_success(f"Added {channel.mention} as lockable channel!")
 
@@ -821,10 +821,10 @@ class ModActions(commands.Cog):
         channel = channel or ctx.channel
         if channel.id not in await ctx.settings.get_locked_channels():
             raise commands.BadArgument("That channel isn't already lockable.")
-        
+
         await ctx.settings.remove_locked_channels(channel.id)
         await ctx.send_success(f"Removed {channel.mention} as lockable channel!")
-            
+
     @commands.guild_only()
     @commands.bot_has_guild_permissions(manage_channels=True)
     @permissions.admin_and_up()
@@ -837,11 +837,11 @@ class ModActions(commands.Cog):
         --------------
         !freeze
         """
-        
+
         channels = await ctx.settings.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No freezeable channels! Set some using `!freezeable`.")
-        
+
         locked = []
         with ctx.typing():
             for channel in channels:
@@ -849,14 +849,14 @@ class ModActions(commands.Cog):
                 if channel is not None:
                     if await self.lock_unlock_channel(ctx, channel, lock=True):
                         locked.append(channel)
-        
-        if locked:              
+
+        if locked:
             await ctx.send_success(f"Locked {len(locked)} channels!", delete_after=5)
             await ctx.message.delete(delay=5)
         else:
             raise commands.BadArgument("Server is already locked or my permissions are wrong.")
-        
-    
+
+
     @commands.guild_only()
     @commands.bot_has_guild_permissions(manage_channels=True)
     @permissions.admin_and_up()
@@ -873,7 +873,7 @@ class ModActions(commands.Cog):
         channels = await ctx.settings.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No unfreezeable channels! Set some using `!freezeable`.")
-        
+
         unlocked = []
         with ctx.typing():
             for channel in channels:
@@ -881,8 +881,8 @@ class ModActions(commands.Cog):
                 if channel is not None:
                     if await self.lock_unlock_channel(ctx, channel, lock=None):
                         unlocked.append(channel)
-        
-        if unlocked:              
+
+        if unlocked:
             await ctx.send_success(f"Unlocked {len(unlocked)} channels!", delete_after=5)
             await ctx.message.delete(delay=5)
         else:
@@ -890,10 +890,10 @@ class ModActions(commands.Cog):
 
     async def lock_unlock_channel(self,  ctx: context.Context, channel, lock=None):
         settings = ctx.settings.guild()
-        
+
         default_role = ctx.guild.default_role
-        member_plus = ctx.guild.get_role(settings.role_memberplus)   
-        
+        member_plus = ctx.guild.get_role(settings.role_memberplus)
+
         default_perms = channel.overwrites_for(default_role)
         memberplus_perms = channel.overwrites_for(member_plus)
 
@@ -905,7 +905,7 @@ class ModActions(commands.Cog):
             memberplus_perms.send_messages = None
         else:
             return
-        
+
         try:
             await channel.set_permissions(default_role, overwrite=default_perms, reason="Locked!" if lock else "Unlocked!")
             await channel.set_permissions(member_plus, overwrite=memberplus_perms, reason="Locked!" if lock else "Unlocked!")
