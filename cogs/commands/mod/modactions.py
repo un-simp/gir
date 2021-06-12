@@ -927,7 +927,7 @@ class ModActions(commands.Cog):
     @warn.error
     @purge.error
     @kick.error
-    @roblox.error
+    @simp.error
     @editreason.error
     @removepoints.error
     async def info_error(self,  ctx: context.Context, error):
