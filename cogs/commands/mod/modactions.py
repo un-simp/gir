@@ -94,7 +94,7 @@ class ModActions(commands.Cog):
             log_kickban = await self.add_ban_case(ctx, user, "800 or more warn points reached.")
             await user.ban(reason="800 or more warn points reached.")
 
-        elif cur_points >= 400 and not results.was_warn_kicked and isinstance(user, discord.Member):
+        elif cur_points >= 69420 and not results.was_warn_kicked and isinstance(user, discord.Member):
             # kick user if >= 400 points and wasn't previously kicked
             await ctx.settings.set_warn_kicked(user.id)
 
