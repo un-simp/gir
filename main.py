@@ -55,7 +55,7 @@ initial_extensions = [
                     'cogs.monitors.logging',
                     'cogs.monitors.reactionroles',
                     'cogs.monitors.xp',
-                    'cogs.commands.misc.activity',
+                    'cogs.commands.misc.activities',
 ]
 
 intents = discord.Intents.default()
