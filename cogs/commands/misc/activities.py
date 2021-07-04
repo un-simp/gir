@@ -17,7 +17,7 @@ class activity(commands.Cog):
     @commands.command(name="activity")
     @commands.guild_only()
     @permissions.mod_and_up()
-    async def say(self, ctx: context.Context, *, message: str):
+    async def activity(self, ctx: context.Context, *, message: str):
         """allows you to start discord activities.
 
         Example usage
@@ -32,7 +32,7 @@ class activity(commands.Cog):
         """
         
         await ctx.send_success(message, delete_after=5)
-    @client.command()
+    @commands.command()
     async def youtube(ctx, vc:commands.VoiceChannelConverter):
         youtube = DiscordTogether(token= token)
         invite_code = await youtube.activity(option="youtube",vc_id=vc.id)
