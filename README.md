@@ -40,4 +40,4 @@ CIJ_KEY = "CIJ TOKEN"
 
 ### First time use
 
-If you aren't porting from Janet, you don't have any baseline data for the bot to work. I wrote a short script `setup.py` which you should fill in with data from your own server, then run `python setup.py`
+If you aren't porting from Janet, you don't have any baseline data for the bot to work. I wrote a short script [setup.py](https://github.com/SlimShadyIAm/gir/blob/main/setup.py) which you should fill in with data from your own server, then run `python setup.py`
