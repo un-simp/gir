@@ -23,7 +23,7 @@ class activity(commands.Cog):
 
         Example usage
         -------------
-        !youtube
+        ;youtube
 
         Parameters
         ----------
