@@ -37,15 +37,19 @@ class activity(commands.Cog):
     async def youtube(self, ctx):
         link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
         await ctx.send(f"Click the blue link!\n{link}")
+    @commands.command()
     async def poker(self, ctx):
         link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
         await ctx.send(f"Click the blue link!\n{link}")
+    @commands.command()
     async def chess(self, ctx):
         link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
         await ctx.send(f"Click the blue link!\n{link}")
+    @commands.command()
     async def betrayal(self, ctx):
         link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
         await ctx.send(f"Click the blue link!\n{link}")
+    @commands.command()
     async def fishing(self, ctx):
         link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'fishing')
         await ctx.send(f"Click the blue link!\n{link}")
