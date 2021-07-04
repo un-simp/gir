@@ -13,7 +13,7 @@ token = os.environ.get("BOTTY_TOKEN")
 class activity(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.togetherControl = DiscordTogether(client)
+        self.togetherControl = DiscordTogether(bot)
 
     @commands.command(name="activity")
     @commands.guild_only()
