@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 import cogs.utils.context as context
 import cogs.utils.permission_checks as permissions
-from Discord_Together.discordtogether import DiscordTogether
+from discordTogether import DiscordTogether
 from dotenv import find_dotenv, load_dotenv
 import os
 load_dotenv(find_dotenv())
@@ -33,26 +33,24 @@ class activity(commands.Cog):
         
         await ctx.send_success(message, delete_after=5)
     @commands.command()
-    async def youtube(ctx, vc:commands.VoiceChannelConverter):
-        youtube = DiscordTogether(token= token)
-        invite_code = await youtube.activity(option="youtube",vc_id=vc.id)
-        await ctx.send(f"https://discord.com/invite/{invite_code}")
-    async def poker(ctx, vc:commands.VoiceChannelConverter):
-        poker = DiscordTogether(token= token)
-        invite_code = await poker.activity(option="poker",vc_id=vc.id)
-        await ctx.send(f"https://discord.com/invite/{invite_code}")
-    async def betrayal(ctx, vc:commands.VoiceChannelConverter):
-        betrayal = DiscordTogether(token= token)
-        invite_code = await betrayal.activity(option="betrayal",vc_id=vc.id)
-        await ctx.send(f"https://discord.com/invite/{invite_code}")
-    async def fishing(ctx, vc:commands.VoiceChannelConverter):
-        fishing = DiscordTogether(token= token)
-        invite_code = await fishing.activity(option="fishing",vc_id=vc.id)
-        await ctx.send(f"https://discord.com/invite/{invite_code}")
-    async def chess(ctx, vc:commands.VoiceChannelConverter):
-        chess = DiscordTogether(token= token)
-        invite_code = await chess.activity(option="chess",vc_id=vc.id)
-        await ctx.send(f"https://discord.com/invite/{invite_code}")
+    async def youtube(ctx):
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
+    await ctx.send(f"Click the blue link!\n{link}")
+    async def poker(ctx):
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
+    await ctx.send(f"Click the blue link!\n{link}")
+    async def chess(ctx):
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
+    await ctx.send(f"Click the blue link!\n{link}")
+    async def betrayal(ctx):
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
+    await ctx.send(f"Click the blue link!\n{link}")
+    async def fishing(ctx):
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, 'fishing')
+    await ctx.send(f"Click the blue link!\n{link}")
+
+    
+
     
     
     
