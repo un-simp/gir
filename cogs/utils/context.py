@@ -4,67 +4,119 @@ import asyncio
 from discord.ext import commands
 import pytimeparse
 
+class PromptData:
+    def __init__(self, value_name, description, convertor, title=None, reprompt=False):
+        self.value_name = value_name
+        self.description = description
+        self.convertor = convertor
+        self.title = title
+        self.reprompt = reprompt
+        
+    def __copy__(self):
+        return PromptData(self.value_name, self.description, self.convertor, self.title, self.reprompt)
+
+
+class PromptDataReaction:
+    def __init__(self, message, reactions, timeout=None, delete_after=False):
+        self.message = message
+        self.reactions = reactions        
+        self.timeout = timeout
+        self.delete_after = delete_after
+
+
 class Context(commands.Context):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.settings = self.bot.settings
         self.permissions = self.bot.settings.permissions
         self.tasks = self.bot.settings.tasks
-        
-    async def send_success(self, description: str, delete_after: int = None):
-        return await self.reply(embed=discord.Embed(description=description, color=discord.Color.blurple()), delete_after=delete_after)
     
-    async def prompt(self, value, data):
-        """Custom prompt system
-
-           Data format is a dictionary:
-           {
-               'prompt': "The message to ask the user",
-               'converter': function to use as converter, for example str or commands.MemberConverter().convert,
-               'event': optional, if you want to prompt for reaction for example
-           }
-        """
-        
-        question = data['prompt']
-        convertor = data['convertor']
-        event = data.get('event') or 'message'
-
+    async def prompt(self, info: PromptData):
         def wait_check(m):
             return m.author == self.author and m.channel == self.channel
     
         ret = None
-        prompt = await self.send(embed=discord.Embed(description=question, color=discord.Color.blurple()))
+        embed = discord.Embed(
+            title=info.title if not info.reprompt else f"That wasn't a valid {info.value_name}. {info.title if info.title is not None else ''}",
+            description=info.description,
+            color=discord.Color.blurple() if not info.reprompt else discord.Color.orange())
+        embed.set_footer(text="Send 'cancel' to cancel.")
+        
+        prompt_msg = await self.send(embed=embed)
         try:
-            response = await self.bot.wait_for(event, check=wait_check, timeout=120)
+            response = await self.bot.wait_for('message', check=wait_check, timeout=120)
         except asyncio.TimeoutError:
-            await prompt.delete()
+            await prompt_msg.delete()
             return
         else:
             await response.delete()
-            await prompt.delete()
+            await prompt_msg.delete()
             if response.content.lower() == "cancel":
                 return
-            elif response.content is not None and response.content != "":
-                if convertor in [str, int, pytimeparse.parse]:
+            elif not response.content:
+                info.reprompt = True
+                return await self.prompt(info)
+            else:
+                if info.convertor in [str, int, pytimeparse.parse]:
                     try:
-                        ret = convertor(response.content)
+                        ret = info.convertor(response.content)
                     except Exception:
                         ret = None
                     
                     if ret is None:
-                        raise commands.BadArgument(f"Could not parse value for parameter \"{value}\".")
+                        info.reprompt = True
+                        return await self.prompt(info)
 
-                    if convertor is pytimeparse.parse:
+                    if info.convertor is pytimeparse.parse:
                         now = datetime.now()
                         time = now + timedelta(seconds=ret)
                         if time < now:
                             raise commands.BadArgument("Time has to be in the future >:(")
 
                 else:
-                    ret = await convertor(self, response.content)
+                    ret = await info.convertor(self, response.content)
                     
         return ret
+    
+    async def prompt_reaction(self, info: PromptDataReaction):
+        for reaction in info.reactions:
+            await info.message.add_reaction(reaction)
+            
+        def wait_check(reaction, user):
+            res = (user.id != self.bot.user.id
+                and reaction.message == info.message
+                and str(reaction.emoji) in info.reactions)
+            return res
+            
+        if info.timeout is None:
+            while True:
+                try:
+                    reaction, reactor = await self.bot.wait_for('reaction_add', timeout=300.0, check=wait_check)
+                    if reaction is not None:
+                        return str(reaction.emoji), reactor    
+                except asyncio.TimeoutError:
+                    if self.bot.report.pending_tasks.get(info.message.id) == "TERMINATE":
+                        return "TERMINATE", None
+        else:
+            try:
+                reaction, reactor = await self.bot.wait_for('reaction_add', timeout=info.timeout, check=wait_check)
+            except asyncio.TimeoutError:
+                try:
+                    if info.delete_after:
+                        await info.message.delete()
+                    else:
+                        await info.message.clear_reactions()
+                    return
+                except Exception:
+                    pass
+            else:
+                return str(reaction.emoji), reactor    
+        
+    async def send_warning(self, description: str, title=None, delete_after: int = None):
+        return await self.reply(embed=discord.Embed(title=title, description=description, color=discord.Color.orange()), delete_after=delete_after)
 
+    async def send_success(self, description: str, title=None, delete_after: int = None):
+        return await self.reply(embed=discord.Embed(title=title, description=description, color=discord.Color.dark_green()), delete_after=delete_after)
         
     async def send_error(self, error):
         embed = discord.Embed(title=":(\nYour command ran into a problem")

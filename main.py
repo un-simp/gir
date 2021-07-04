@@ -14,7 +14,7 @@ from discord.ext import commands
 from dotenv import find_dotenv, load_dotenv
 from fold_to_ascii import fold
 
-from cogs.monitors.report import report
+from cogs.monitors.report import Report
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,6 +34,7 @@ initial_extensions = [
                     'cogs.commands.mod.modactions',
                     'cogs.commands.mod.modutils',
                     'cogs.commands.mod.antiraid',
+                    'cogs.commands.mod.trivia',
                     'cogs.commands.misc.admin',
                     'cogs.commands.misc.genius',
                     'cogs.commands.misc.misc',
@@ -77,8 +78,14 @@ class Bot(commands.Bot):
         
         if message.guild is not None and message.guild.id == self.settings.guild_id:
             if not self.settings.permissions.hasAtLeast(message.guild, message.author, 6):
-                if await self.filter(message):
-                    return
+                role_submod = message.guild.get_role(self.settings.guild().role_sub_mod)
+                if role_submod is not None:
+                    if role_submod not in message.author.roles:
+                        if await self.filter(message):
+                            return
+                else:
+                    if await self.filter(message):
+                        return
                                 
         await self.process_commands(message)
 
@@ -134,7 +141,7 @@ class Bot(commands.Bot):
                                 await self.ratelimit(message)
                                 reported = True
                             if word.notify:
-                                await report(self, message, message.author, word.word)
+                                await self.report.report(message, message.author, word.word)
                                 return True
         return word_found
     
@@ -163,13 +170,13 @@ class Bot(commands.Bot):
                             if id not in whitelist:
                                 await self.delete(message)
                                 await self.ratelimit(message)
-                                await report(self, message, message.author, invite, invite=invite)
+                                await self.report.report(message, message.author, invite, invite=invite)
                                 return True
 
                         except discord.errors.NotFound:
                             await self.delete(message)
                             await self.ratelimit(message)
-                            await report(self, message, message.author, invite, invite=invite)
+                            await self.report.report(message, message.author, invite, invite=invite)
                             return True
         return False
     
@@ -290,12 +297,12 @@ bot.max_messages = 10000
 if __name__ == '__main__':
     bot.owner_id = int(os.environ.get("BOTTY_OWNER"))
     bot.remove_command("help")
+    bot.report = Report(bot)
     for extension in initial_extensions:
         bot.load_extension(extension)
 
 
-@bot.event
-async def on_ready():
+async def run_once_when_ready():
     await bot.wait_until_ready()
 
     print(
@@ -305,4 +312,5 @@ async def on_ready():
     print(f'Successfully logged in and booted...!')
 
 
+bot.loop.create_task(run_once_when_ready())
 bot.run(os.environ.get("BOTTY_TOKEN"), bot=True, reconnect=True)

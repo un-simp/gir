@@ -56,26 +56,31 @@ class Giveaway(commands.Cog):
         """
 
         prompts = {
-            'name': {
-                'convertor': str,
-                'prompt': "Enter a name for the giveaway (or type cancel to cancel)"
-                },
-            'sponsor': {
-                'convertor': commands.MemberConverter().convert,
-                'prompt': "Tag or give the ID of the sponsor of this giveaway (or type cancel to cancel)"
-                },
-            'time': {
-                'convertor': pytimeparse.parse,
-                'prompt': "How long should this giveaway last? (e.g 10m) (or type cancel to cancel)"
-                },
-            'winners': {
-                'convertor': int,
-                'prompt': "How many winners should this giveaway have? (or type cancel to cancel)"
-                },
-            'channel': {
-                'convertor': commands.TextChannelConverter().convert,
-                'prompt': "Mention the channel to post the giveaway in (or type cancel to cancel)"
-                }
+            'name': context.PromptData(
+                value_name="name",
+                description="Enter a name for the giveaway.",
+                convertor=str
+            ),
+            'sponsor': context.PromptData(
+                value_name="sponsor",
+                description="Tag or give the ID of the sponsor of this giveaway.",
+                convertor=commands.MemberConverter().convert
+            ),
+            'time': context.PromptData(
+                value_name="time",
+                description="How long should this giveaway last? (e.g 10m).",
+                convertor=pytimeparse.parse
+            ),
+            'winners': context.PromptData(
+                value_name="winner_count",
+                description="How many winners should this giveaway have?",
+                convertor=int
+            ),
+            'channel': context.PromptData(
+                value_name="channel",
+                description="Mention the channel to post the giveaway in.",
+                convertor=commands.TextChannelConverter().convert
+            ),
         }
 
         responses = {
@@ -88,12 +93,14 @@ class Giveaway(commands.Cog):
 
         for response in responses:
             if responses[response] is None:
-                res = await ctx.prompt(value=response, data=prompts[response])
+                res = await ctx.prompt(prompts[response])
                 if res is None:
-                    raise commands.BadArgument("Command cancelled.")
+                    await ctx.send_warning("Giveaway cancelled.")
+                    return
                 
                 if response == 'winners' and res < 1:
-                    raise commands.BadArgument("Can't have less than 1 winner")
+                    await ctx.send_warning("Can't have less than 1 winner!")
+                    return
 
                 responses[response] = res
 
@@ -130,18 +137,6 @@ class Giveaway(commands.Cog):
         giveaways = GiveawayDB.objects(is_ended=False)
         for giveaway in giveaways:
             await self.do_giveaway_update(giveaway, guild)
-
-    # @commands.Cog.listener()
-    # async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-    #     if payload.member.bot:
-    #         return
-    #     if not payload.guild_id:
-    #         return
-    #     if not payload.guild_id == self.bot.settings.guild_id:
-    #         return
-
-    #     g = await self.bot.settings.get_giveaway(id=payload.message_id)
-    #     await self.do_giveaway_update(g, payload.member.guild)
 
     async def do_giveaway_update(self, giveaway: GiveawayDB, guild: discord.Guild):
         if giveaway is None:
