@@ -18,7 +18,7 @@ class activity(commands.Cog):
     @commands.command(name="activity")
     @commands.guild_only()
     @permissions.mod_and_up()
-    async def activity(self, ctx: context.Context, *,):
+    async def youtube(self, ctx: context.Context, *, message: str):
         """allows you to start discord activities.
 
         Example usage
