@@ -57,7 +57,7 @@ class activity(commands.Cog):
     
     
     
-    @say.error
+    @activity.error
     async def info_error(self, ctx: context.Context, error):
         await ctx.message.delete(delay=5)
         if (isinstance(error, commands.MissingRequiredArgument)
