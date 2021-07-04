@@ -34,20 +34,20 @@ class activity(commands.Cog):
         
         await ctx.send_success(message, delete_after=5)
     @commands.command()
-    async def youtube(ctx):
-        link = await togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
+    async def youtube(self, ctx):
+        link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'youtube')
         await ctx.send(f"Click the blue link!\n{link}")
-    async def poker(ctx):
-        link = await togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
+    async def poker(self, ctx):
+        link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'poker')
         await ctx.send(f"Click the blue link!\n{link}")
-    async def chess(ctx):
-        link = await togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
+    async def chess(self, ctx):
+        link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'chess')
         await ctx.send(f"Click the blue link!\n{link}")
-    async def betrayal(ctx):
-        link = await togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
+    async def betrayal(self, ctx):
+        link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'betrayal')
         await ctx.send(f"Click the blue link!\n{link}")
-    async def fishing(ctx):
-        link = await togetherControl.create_link(ctx.author.voice.channel.id, 'fishing')
+    async def fishing(self, ctx):
+        link = await self.togetherControl.create_link(ctx.author.voice.channel.id, 'fishing')
         await ctx.send(f"Click the blue link!\n{link}")
 
     
