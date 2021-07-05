@@ -32,13 +32,12 @@ SPOTIFY_CLIENT_SECRET" = "YOUR SPOTIFY SECRET"
 CIJ_KEY = "CIJ TOKEN"
 ```
 
-6. Download the latest version of the Lavalink jar file from [here](https://github.com/Frederikam/Lavalink/releases/), and put it in the root of the project
-7. Set up the `application.yml` as shown in the example [here](https://github.com/freyacodes/Lavalink/blob/master/LavalinkServer/application.yml.example ), also in the root of the project. Use the same password as in the `.env` file. You need not change anything else.
-8. Run Lavalink with `java -jar Lavalink.jar`
-9. Set up mongodb on your system (and see *First time use* to populate the database with initial data)
-10. Run `python scrape_emojis.py`. This will pull emoji data needed for `!jumbo`. You only need to do this once (or any time you want to update the list of emojis).
-11. `python main.py` - if everything was set up properly you're good to go!
+6. Set up the `application.yml` as shown in the example [here](https://github.com/freyacodes/Lavalink/blob/master/LavalinkServer/application.yml.example ), also in the root of the project. Use the same password as in the `.env` file. You need not change anything else.
+7. Run Lavalink with `java -jar Lavalink.jar`
+8. Set up mongodb on your system (and see *First time use* to populate the database with initial data)
+9. Run `python scrape_emojis.py`. This will pull emoji data needed for `!jumbo`. You only need to do this once (or any time you want to update the list of emojis).
+10. `python main.py` - if everything was set up properly you're good to go!
 
 ### First time use
 
-If you aren't porting from Janet, you don't have any baseline data for the bot to work. I wrote a short script `setup.py` which you should fill in with data from your own server, then run `python setup.py`
+If you aren't porting from Janet, you don't have any baseline data for the bot to work. I wrote a short script [setup.py](https://github.com/SlimShadyIAm/gir/blob/main/setup.py) which you should fill in with data from your own server, then run `python setup.py`
