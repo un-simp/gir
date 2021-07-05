@@ -99,7 +99,6 @@ class Utilities(commands.Cog):
                         raise commands.BadArgument("I tried to DM you but couldn't. Make sure your DMs are enabled.")
             else:
                 raise commands.BadArgument("Command not found.", delete_after=5)
-
     @commands.command(name="usage", hidden=True)
     @commands.guild_only()
     @permissions.bot_channel_only_unless_mod()
