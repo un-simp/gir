@@ -10,12 +10,47 @@ from data.case import Case
 from discord.ext import commands
 from expiringdict import ExpiringDict
 from fold_to_ascii import fold
-
+from asyncio import Lock
 
 class RaidType:
     PingSpam = 1
     RaidPhrase = 2
     MessageSpam = 3
+    JoinSpamOverTime = 4
+    
+class CustomBucketType(commands.BucketType):
+    custom = 7
+    
+    def get_key(self, tag):
+        return tag
+        
+        
+class CustomCooldown(commands.Cooldown):
+    __slots__ = ('rate', 'per', 'type', '_window', '_tokens', '_last')
+
+    def __init__(self, rate, per, type):
+        self.rate = int(rate)
+        self.per = float(per)
+        self.type = type
+        self._window = 0.0
+        self._tokens = self.rate
+        self._last = 0.0
+
+        if not isinstance(self.type, CustomBucketType):
+            raise TypeError('Cooldown type must be a BucketType')
+        
+    def copy(self):
+        return CustomCooldown(self.rate, self.per, self.type)
+
+
+class CustomCooldownMapping(commands.CooldownMapping):
+    def __init__(self, original):
+        self._cache = {}
+        self._cooldown = original
+        
+    @classmethod
+    def from_cooldown(cls, rate, per, type):
+        return cls(CustomCooldown(rate, per, type))
 
 class AntiRaidMonitor(commands.Cog):
     def __init__(self, bot):
@@ -23,6 +58,8 @@ class AntiRaidMonitor(commands.Cog):
         self.join_raid_detection_threshold = commands.CooldownMapping.from_cooldown(10, 8, commands.BucketType.guild)
         self.raid_detection_threshold = commands.CooldownMapping.from_cooldown(4, 15.0, commands.BucketType.guild)
         self.message_spam_detection_threshold = commands.CooldownMapping.from_cooldown(7, 5.0, commands.BucketType.member)
+        self.join_overtime_raid_detection_threshold = CustomCooldownMapping.from_cooldown(4, 2700, CustomBucketType.custom)
+
         # self.message_spam_detection_threshold = MessageCooldownMapping.from_cooldown(4, 8, BucketType.message)
 
         self.raid_alert_cooldown = commands.CooldownMapping.from_cooldown(1, 600.0, commands.BucketType.guild)
@@ -30,9 +67,15 @@ class AntiRaidMonitor(commands.Cog):
         self.spam_user_mapping = ExpiringDict(max_len=100, max_age_seconds=10)
         self.join_user_mapping = ExpiringDict(max_len=100, max_age_seconds=10)
         self.ban_user_mapping = ExpiringDict(max_len=100, max_age_seconds=120)
+        self.join_overtime_mapping = ExpiringDict(max_len=100, max_age_seconds=2700)
+        
+        self.join_overtime_lock = Lock()
+        self.banning_lock = Lock()
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        # TODO: this seriously needs to be rewritten...
+        
         if member.guild.id != self.bot.settings.guild_id:
             return
         if member.bot:
@@ -50,22 +93,54 @@ class AntiRaidMonitor(commands.Cog):
                 except KeyError:
                     continue
                 
-                if user in self.ban_user_mapping:
-                    continue
-                
                 try:
-                    await self.raid_ban(user, reason="Join spam detected")
+                    await self.raid_ban(user, reason="Join spam detected.")
                 except Exception:
                     pass
                 
-            raid_alert_bucket = self.raid_alert_cooldown.get_bucket(user)
+            raid_alert_bucket = self.raid_alert_cooldown.get_bucket(member)
             if not raid_alert_bucket.update_rate_limit(current):
-                await self.bot.report.report_raid(user)
+                await self.bot.report.report_raid(member)
                 await self.freeze_server(member.guild)
+        
+        if member.created_at < datetime.strptime("01/05/21 00:00:00", '%d/%m/%y %H:%M:%S'):
+            return # skip if not a very new account
+        
+        if not self.bot.settings.guild().ban_today_spam_accounts:
+            now = datetime.today()
+            now = [now.year, now.month, now.day]
+            member_now = [ member.created_at.year, member.created_at.month, member.created_at.day]
+            
+            if now == member_now:
+                return
+        
+        timestamp_ = member.created_at.strftime(
+            "%B %d, %Y, %I %p")
+        timestamp = member.created_at.strftime(
+            "%B %d, %Y")
+        
+        async with self.join_overtime_lock:
+            if self.join_overtime_mapping.get(timestamp) is None:
+                self.join_overtime_mapping[timestamp] = [member]
+            else:
+                if member in self.join_overtime_mapping[timestamp]:
+                    return
                 
+                self.join_overtime_mapping[timestamp].append(member)
+                
+        bucket = self.join_overtime_raid_detection_threshold.get_bucket(timestamp)
+        current = member.joined_at.replace(tzinfo=timezone.utc).timestamp()
+        if bucket.update_rate_limit(current):
+            for user in self.join_overtime_mapping.get(timestamp):
+                try:
+                    await self.raid_ban(user, reason=f"Join spam over time detected (bucket `{timestamp_}`)", dm_user=True)
+                    self.join_overtime_mapping[timestamp].remove(user)
+                except Exception:
+                    pass
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not message.guild:
+        if message.guild is None:
             return
         if message.author.bot:
             return
@@ -119,10 +194,7 @@ class AntiRaidMonitor(commands.Cog):
                         _ = self.spam_user_mapping[user]
                     except KeyError:
                         continue
-                    
-                    if user in self.ban_user_mapping:
-                        continue
-                    
+                                        
                     user = message.guild.get_member(user)
                     if user is None:
                         continue
@@ -197,38 +269,41 @@ class AntiRaidMonitor(commands.Cog):
                         return True
         return False
             
-    async def raid_ban(self, user: discord.Member, reason="Raid phrase detected"):
-        case = Case(
-            _id=self.bot.settings.guild().case_id,
-            _type="BAN",
-            date=datetime.now(),
-            mod_id=self.bot.user.id,
-            mod_tag=str(self.bot),
-            punishment="PERMANENT",
-            reason=reason
-        )
+    async def raid_ban(self, user: discord.Member, reason="Raid phrase detected", dm_user=False):
+        async with self.banning_lock:
+            if self.ban_user_mapping.get(user.id) is not None:
+                return
+            else:
+                self.ban_user_mapping[user.id] = 1
 
-        await self.bot.settings.inc_caseid()
-        await self.bot.settings.add_case(user.id, case)
-        
-        continue_ = False
-        try:
-            _ = self.ban_user_mapping[user.id]
-        except KeyError:
-            continue_ = True
+            case = Case(
+                _id=self.bot.settings.guild().case_id,
+                _type="BAN",
+                date=datetime.now(),
+                mod_id=self.bot.user.id,
+                mod_tag=str(self.bot),
+                punishment="PERMANENT",
+                reason=reason
+            )
+
+            await self.bot.settings.inc_caseid()
+            await self.bot.settings.add_case(user.id, case)
             
-        if not continue_:
-            return
-        
-        self.ban_user_mapping[user.id] = 1
-        await user.ban(reason="Raid")
-
-        log = await logger.prepare_ban_log(self.bot.user, user, case)
-        public_logs = user.guild.get_channel(self.bot.settings.guild().channel_public)
-        if public_logs:
-            log.remove_author()
-            log.set_thumbnail(url=user.avatar_url)
-            await public_logs.send(embed=log)
+            log = await logger.prepare_ban_log(self.bot.user, user, case)
+            
+            if dm_user:
+                try:
+                    await user.send(f"You were banned from {user.guild.name}.\n\nThis action was performed automatically. If you think this was a mistake, please send a message here: https://www.reddit.com/message/compose?to=%2Fr%2FJailbreak", embed=log)
+                except Exception:
+                    pass
+            
+            await user.guild.ban(discord.Object(id=user.id), reason="Raid")
+            
+            public_logs = user.guild.get_channel(self.bot.settings.guild().channel_public)
+            if public_logs:
+                log.remove_author()
+                log.set_thumbnail(url=user.avatar_url)
+                await public_logs.send(embed=log)
 
     async def freeze_server(self, guild):
         settings = self.bot.settings.guild()
